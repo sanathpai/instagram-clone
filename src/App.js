@@ -76,14 +76,22 @@ function App() {
 
   const signUp = (event) => {
     event.preventDefault();
-    auth.createUserWithEmailAndPassword(email, password).then((authUser) => {
-      return authUser.user.updateProfile({
-        displayname: username
+    auth
+      .createUserWithEmailAndPassword(email, password)
+      .then((authUser) => {
+        return authUser.user.updateProfile({
+          displayname: username
+        })
       })
-    }).catch((error) => alert(error.message));
+      .catch((error) => alert(error.message));
+    setOpen(false);
   }
   const signIn = (event) => {
     event.preventDefault();
+    auth
+      .signInWithEmailAndPassword(email, password)
+      .catch((error) => alert(error.message));
+    setOpensignIn(false);
   }
   return (
     <div className="app">
