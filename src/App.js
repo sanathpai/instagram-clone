@@ -1,32 +1,115 @@
 import React, { useState, useEffect } from 'react';
 import './App.css';
 import Post from './Post';
-import { db } from './firebase';
+import { db, auth } from './firebase';
+import Modal from '@material-ui/core/Modal';
+import { makeStyles } from '@material-ui/core/styles';
+import { Button, Input } from '@material-ui/core';
+function getModalStyle() {
+  const top = 50;
+  const left = 50;
+
+  return {
+    top: `${top}%`,
+    left: `${left}%`,
+    transform: `translate(-${top}%, -${left}%)`,
+  };
+}
+
+const useStyles = makeStyles((theme) => ({
+  paper: {
+    position: 'absolute',
+    width: 400,
+    backgroundColor: theme.palette.background.paper,
+    border: '2px solid #000',
+    boxShadow: theme.shadows[5],
+    padding: theme.spacing(2, 4, 3),
+  },
+}));
+
 function App() {
-  const [posts, setPosts] = useState([
-    // {
-    //   username: "sanathpai99",
-    //   caption: "what a frikkin idiot!",
-    //   imageUrl: "https://images.unsplash.com/photo-1596650956793-68f12df4e549?ixlib=rb-1.2.1&ixid=eyJhcHBfaWQiOjEyMDd9&auto=format&fit=crop&w=500&q=60"
-    // },
-    // {
-    //   username: "anushamlvalli",
-    //   caption: "hahaha!",
-    //   imageUrl: "https://images.unsplash.com/photo-1600115010857-edbbc7e1efb8?ixlib=rb-1.2.1&ixid=eyJhcHBfaWQiOjEyMDd9&auto=format&fit=crop&w=500&q=60"
-    // }
-  ]);
+  const classes = useStyles();
+  const [modalStyle] = React.useState(getModalStyle);
+  const [posts, setPosts] = useState([]);
+  const [open, setOpen] = useState(false);
+  const [username, setUsername] = useState('');
+  const [email, setEmail] = useState('');
+  const [password, setPassword] = useState('');
+  const [user, setUser] = useState(null);
+
+  useEffect(() => {
+    const unsubscribe = auth.onAuthStateChanged((authUser) => {
+      if (authUser) {
+        // user loggedin
+        console.log(authUser);
+        setUser(authUser);
+        if (authUser.displayName) {
+          // dont update username
+        }
+        else {
+          //if we just created someone
+          return authUser.updateProfile({
+            displayName: username,
+          });
+        }
+      }
+      else {
+        // user logged out
+        setUser(null);
+      }
+      return () => {
+        // perform some clean up actions
+        unsubscribe();
+      }
+    })
+  }, [user, username]);
   useEffect(() => {
     db.collection('posts').onSnapshot(snapshot => {
-      setPosts(snapshot.docs.map(doc => doc.data()))
-    });
-  }, [])
+      setPosts(snapshot.docs.map(doc => ({
+        id: doc.id,
+        post: doc.data()
+      })));
+    })
+
+  }, []);
+
+  const signUp = (event) => {
+    event.preventDefault();
+    auth.createUserWithEmailAndPassword(email, password).then((authUser) => {
+      return authUser.user.updateProfile({
+        displayname: username
+      })
+    }).catch((error) => alert(error.message));
+  }
+
   return (
     <div className="app">
+      <Modal
+        open={open}
+        onClose={() => setOpen(false)}>
+        <div style={modalStyle} className={classes.paper}>
+          <form className="app__signup">
+            <center>
+              <img className="app__headerImage" alt="" src="https://www.instagram.com/static/images/web/mobile_nav_type_logo.png/735145cfe0a4.png" />
+            </center>
+            <Input placeholder="username" type="text" value={username} onChange={(e) => setUsername(e.target.value)}>
+            </Input>
+            <Input placeholder="email" type="text" value={email} onChange={(e) => setEmail(e.target.value)}>
+            </Input>
+            <Input placeholder="password" type="password" value={password} onChange={(e) => setPassword(e.target.value)}>
+            </Input>
+            <Button type="submit" onClick={signUp}>Sign Up</Button>
+
+          </form>
+        </div>
+      </Modal>
+
       <div className="app__header">
         <img className="app__headerImage" alt="" src="https://www.instagram.com/static/images/web/mobile_nav_type_logo.png/735145cfe0a4.png" />
       </div>
-      {posts.map(post => (
-        <Post username={post.username} caption={post.caption} imageUrl={post.imageUrl} />
+      <Button onClick={() => { setOpen(true) }}>Sign Up</Button>
+      {posts.map(({ id, post }) => (
+        <Post key={id} username={post.username} caption={post.caption} imageUrl={post.imageUrl} />
       ))}
 
     </div>
