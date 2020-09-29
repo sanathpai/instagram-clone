@@ -1,6 +1,7 @@
 import React, { useState, useEffect } from 'react';
 import './App.css';
 import Post from './Post';
+import ImageUpload from './ImageUpload';
 import { db, auth } from './firebase';
 import Modal from '@material-ui/core/Modal';
 import { makeStyles } from '@material-ui/core/styles';
@@ -80,7 +81,7 @@ function App() {
       .createUserWithEmailAndPassword(email, password)
       .then((authUser) => {
         return authUser.user.updateProfile({
-          displayname: username
+          displayName: username
         })
       })
       .catch((error) => alert(error.message));
@@ -95,6 +96,13 @@ function App() {
   }
   return (
     <div className="app">
+      {user?.displayName ? (
+        <ImageUpload username={user.displayname} />
+      ) : (
+          <h3>Sorry you need to login to upload</h3>
+        )}
+
+
       <Modal
         open={open}
         onClose={() => setOpen(false)}>
